@@ -1,6 +1,6 @@
 from player import MusicPlayer
 from utils import get_audio_url
-from config import get_music_folder
+from config import get_music_folder, ConfigManager
 import time
 
 def test_player():
@@ -21,6 +21,10 @@ def test_player():
 
     """
     player = MusicPlayer()
+
+    config_manager = ConfigManager()
+
+    # config_manager.delete_config()
     
     # Test local library
     print("Setting up library...")
@@ -46,7 +50,9 @@ def test_player():
             player.resume()
             time.sleep(50)
             player.stop()
-    
+
+    # config_manager.rewrite_config()
+
     # Test online playback
     print("\nTesting online playback...")
     query = "Rick Astley Never Gonna Give You Up"
