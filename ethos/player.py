@@ -92,3 +92,37 @@ class MusicPlayer:
     def get_volume(self) -> int:
         """Get current volume"""
         return self.player.audio_get_volume()
+    
+
+
+class TrackInfo:
+    """
+    A class for managing audio track metadata.
+
+    Provides functionality to retrieve information about audio tracks,
+    """
+    @staticmethod
+    def get_audio_duration(track_path: str) -> int:
+        """
+        Get the duration of an audio file in seconds.
+
+        Args:
+        - audio_path (str): The full path to the audio file.
+
+        Returns:
+        - int: The duration of the audio file in seconds, or -1 if the duration
+               could not be determined.
+        """
+        try:
+            media = vlc.Media(track_path)
+            media_player = vlc.MediaPlayer()
+            media_player.set_media(media)
+
+            media.parse_with_options(1, 0)
+            while media.get_duration() < 0:
+                continue
+
+            return media.get_duration() // 1000  # Convert milliseconds to seconds
+        except Exception as e:
+            print(f"Error retrieving duration: {e}")
+            return -1
