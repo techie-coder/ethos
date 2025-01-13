@@ -1,7 +1,12 @@
-from player import MusicPlayer
-from utils import get_audio_url
+####################
+# Temporary script #
+####################
+from player import MusicPlayer, TrackInfo
+from utils import get_audio_url, get_song_metadata
 from config import get_music_folder, ConfigManager
 import time
+import asyncio
+from datetime import timedelta
 
 def test_player():
     """
@@ -34,13 +39,26 @@ def test_player():
         print(f"Found {len(songs)} songs in library")
         
         if songs:
-            print("Testing local playback...")
+            print("Testing local playback...")   # Took 2.23 sec.
+            duration = TrackInfo.get_audio_duration(songs[0])
+            print(f"Duration of the song: {duration} seconds")
+            # print(f"Duration of the song: {formate.seconds_to_min_sec(duration)}")
+
             player.play(songs[0]) # Play the first song in the folder
-            time.sleep(5)  
-            
+            time.sleep(5) 
+
             print("Testing volume controls...")
             player.set_volume(50)
             time.sleep(2)
+            
+            current_time = TrackInfo.get_current_time(player)
+            progress = TrackInfo.get_progress(player)
+
+            print(f"Current playback time: {current_time} seconds")
+            print(f"Playback progress: {progress:.2f}%")
+
+
+
             player.set_volume(100)
             time.sleep(2)
             
@@ -48,14 +66,14 @@ def test_player():
             player.pause()
             time.sleep(2)
             player.resume()
-            time.sleep(50)
+            time.sleep(5)
             player.stop()
 
     # config_manager.rewrite_config()
 
     # Test online playback
-    print("\nTesting online playback...")
-    query = "Rick Astley Never Gonna Give You Up"
+    print("\nTesting online playback...") # Took 4.40 sec.
+    query = "sky-fall"
     url = get_audio_url(query)
     if url:
         print(f"Playing {query}...")
@@ -72,8 +90,22 @@ def test_player():
         player.pause()
         time.sleep(2)
         player.resume()
-        time.sleep(50)
+
+        time.sleep(150)        
+        current_time = TrackInfo.get_current_time(player)
+        progress = TrackInfo.get_progress(player)
+
+        print(f"Current playback time: {current_time} seconds")
+        print(f"Playback progress: {progress:.2f}%")
         player.stop()
+
+        # Test get_song_metadata function
+        print("\nTesting get_song_metadata function...") # Took 8 sec.
+        start_time = time.monotonic()
+        metadata =asyncio.run(get_song_metadata(query))
+        end_time = time.monotonic()
+        print(f"you were playing: {metadata}")
+        print( timedelta(seconds=end_time - start_time))
 
 if __name__ == "__main__":
     test_player()
