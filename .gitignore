@@ -91,3 +91,6 @@ dmypy.json
 # Editor directories
 .vscode/
 .idea/
+
+
+.cache
