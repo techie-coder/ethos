@@ -97,24 +97,14 @@ class MusicPlayer:
 
 class TrackInfo:
     """
-    A class for managing audio track metadata.
-
-    Provides functionality to retrieve information about audio tracks,
+    A class for managing audio track metadata and playback progress.
     """
+
     @staticmethod
-    def get_audio_duration(track_path: str) -> int:
-        """
-        Get the duration of an audio file in seconds.
-
-        Args:
-        - audio_path (str): The full path to the audio file.
-
-        Returns:
-        - int: The duration of the audio file in seconds, or -1 if the duration
-               could not be determined.
-        """
+    def get_audio_duration(audio_path: str) -> int:
+        """Get the duration of an audio file in seconds."""
         try:
-            media = vlc.Media(track_path)
+            media = vlc.Media(audio_path)
             media_player = vlc.MediaPlayer()
             media_player.set_media(media)
 
@@ -126,3 +116,29 @@ class TrackInfo:
         except Exception as e:
             print(f"Error retrieving duration: {e}")
             return -1
+
+    @staticmethod
+    def get_current_time(music_player: "MusicPlayer") -> int:
+        """Get the current playback time in seconds."""
+        return music_player.player.get_time() // 1000  
+        
+    @staticmethod
+    def get_progress(music_player: "MusicPlayer") -> float:
+        """
+        Get the playback progress as a percentage.
+
+        Args:
+        - music_player (MusicPlayer): The MusicPlayer instance.
+
+        Returns:
+        - float: The playback progress (0.0 to 100.0).
+        """
+        if not music_player.current_track:
+            return 0.0
+
+        duration = TrackInfo.get_audio_duration(music_player.current_track)
+        current_time = TrackInfo.get_current_time(music_player)
+
+        if duration > 0:
+            return (current_time / duration) * 100
+        return 0.0
