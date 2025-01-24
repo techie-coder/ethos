@@ -8,7 +8,8 @@ class MusicPlayer:
     A music player class for managing audio playback.
 
     The MusicPlayer class provides functionalities for managing a library of audio
-    files, playing, pausing, resuming, stopping tracks, and adjusting volume.
+    files, playing, pausing, resuming, stopping tracks, and adjusting volume, skipping forward
+    and backwards.
     It integrates with the VLC media player for handling playback.
     """
     def __init__(self):
@@ -92,7 +93,50 @@ class MusicPlayer:
     def get_volume(self) -> int:
         """Get current volume"""
         return self.player.audio_get_volume()
-    
+        
+    def skip_forward(self, seconds: int = 5):
+        """
+        Skip forward by a specified number of seconds.
+        
+        Args:
+        - seconds (int): Number of seconds to skip forward. Default is 5.
+        """
+        if not self.current_track:
+            return
+        
+        current_time = self.player.get_time()
+        if current_time == -1:  # No media or error
+            return
+        
+        new_time = current_time + seconds * 1000 
+        
+        # Ensure ethos don't skip beyond the end of the track
+        media = self.player.get_media()
+        if media:
+            duration = media.get_duration()
+            if duration != -1:
+                new_time = min(new_time, duration)
+        
+        self.player.set_time(new_time)
+
+    def skip_backward(self, seconds: int = 5):
+        """
+        Skip backward by a specified number of seconds.
+        
+        Args:
+        - seconds (int): Number of seconds to skip backward. Default is 5.
+        """
+        if not self.current_track:
+            return
+        
+        current_time = self.player.get_time()
+        if current_time == -1:  # No media or error
+            return
+        
+        new_time = current_time - seconds * 1000  
+        new_time = max(new_time, 0)  # Ensure time doesn't go negative
+        
+        self.player.set_time(new_time) 
 
 
 class TrackInfo:
