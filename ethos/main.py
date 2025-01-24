@@ -47,10 +47,12 @@ def test_player():
             player.play(songs[0]) # Play the first song in the folder
             time.sleep(5) 
 
+            player.skip_forward(30)
+
             print("Testing volume controls...")
             player.set_volume(50)
             time.sleep(2)
-            
+            player.skip_backward(15)  
             current_time = TrackInfo.get_current_time(player)
             progress = TrackInfo.get_progress(player)
 
