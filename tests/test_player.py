@@ -1,8 +1,8 @@
 import pytest
-
-from ethos.utils import get_audio_url
-from ethos.config import get_music_folder
-from ethos.player import MusicPlayer
+import asyncio
+from ..ethos.utils import get_audio_url, fetch_tracks_list
+from ..ethos.config import get_music_folder
+from ..ethos.player import MusicPlayer
 import time
 player = MusicPlayer()
 
@@ -44,14 +44,17 @@ def test_local_player():
             player.stop()
     assert success
 
+
 def test_online_player():
     print("\nTesting online playback...")
-    query = "System of a Down - Chop suey"
+    track_name = "system of a down"
+    tracks_list = asyncio.run(fetch_tracks_list(track_name))
+    query = tracks_list[0]
     url = get_audio_url(query)
     if url:
         print(f"Playing {query}...")
         player.play(url)
-        time.sleep(1)
+        time.sleep(60)
 
         print("Testing volume controls...")
         player.set_volume(50)
@@ -67,4 +70,6 @@ def test_online_player():
         player.stop()
     assert url
 
+
+test_online_player()
 

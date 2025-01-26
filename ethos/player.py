@@ -1,7 +1,8 @@
 import vlc
 from pathlib import Path
 from typing import Optional, List
-from config import get_music_folder
+from .config import get_music_folder
+from typing import Literal
 
 class MusicPlayer:
     """
@@ -12,10 +13,12 @@ class MusicPlayer:
     It integrates with the VLC media player for handling playback.
     """
     def __init__(self):
-        self.player = vlc.MediaPlayer()
+        self.vlc_instance = vlc.Instance()
+        self.player = self.vlc_instance.media_player_new()
         self.current_track: Optional[str] = None
         self.is_playing = False
         self.library_path: Optional[Path] = get_music_folder()
+        self.queue = None
         
     def set_library(self, path: str) -> bool:
         """Set and validate the music library path"""
@@ -53,7 +56,7 @@ class MusicPlayer:
                 False otherwise (e.g., invalid file path or VLC initialization error).
         """
         try:
-            media = vlc.Media(track_path)
+            media = self.vlc_instance.media_new(track_path)
             self.player.set_media(media)
             self.player.play()
             self.current_track = track_path
@@ -72,7 +75,6 @@ class MusicPlayer:
         """Resume the paused playback"""
         if not self.is_playing:
             self.player.play()
-            self.is_playing = True
 
     def stop(self):
         """
@@ -92,7 +94,9 @@ class MusicPlayer:
     def get_volume(self) -> int:
         """Get current volume"""
         return self.player.audio_get_volume()
-    
+
+    def get_state(self) -> any:
+        return self.player.get_state()           
 
 
 class TrackInfo:
@@ -101,8 +105,8 @@ class TrackInfo:
     """
 
     @staticmethod
-    def get_audio_duration(audio_path: str) -> int:
-        """Get the duration of an audio file in seconds."""
+    def get_audio_duration(audio_path: str) -> str:
+        """Get the duration of an audio file in minutes and seconds."""
         try:
             media = vlc.Media(audio_path)
             media_player = vlc.MediaPlayer()
@@ -112,15 +116,52 @@ class TrackInfo:
             while media.get_duration() < 0:
                 continue
 
-            return media.get_duration() // 1000  # Convert milliseconds to seconds
+            total_seconds = media.get_duration() // 1000 
+            minutes = total_seconds // 60
+            seconds = total_seconds % 60
+
+            return f"{minutes}:{seconds:02}"
         except Exception as e:
             print(f"Error retrieving duration: {e}")
-            return -1
+            return "0:00"
+
 
     @staticmethod
-    def get_current_time(music_player: "MusicPlayer") -> int:
+    def get_current_time(music_player: "MusicPlayer") -> str:
+        """Get the current playback time in minutes and seconds."""
+        total_seconds = music_player.player.get_time() // 1000
+        minutes = total_seconds // 60
+        seconds = total_seconds % 60
+        return f"{minutes}:{seconds:02}"
+
+
+    @staticmethod
+    def get_audio_duration_int(audio_path: str) -> int:
+            """Get the duration of an audio file in seconds."""
+            try:
+                media = vlc.Media(audio_path)
+                media_player = vlc.MediaPlayer()
+                media_player.set_media(media)
+
+                media.parse_with_options(1, 0)
+                while media.get_duration() < 0:
+                    continue
+
+                # Return the duration in seconds
+                return media.get_duration() // 1000
+            except Exception as e:
+                print(f"Error retrieving duration: {e}")
+                return 0
+    
+    @staticmethod
+    def get_current_time_int(music_player: "MusicPlayer") -> int:
         """Get the current playback time in seconds."""
-        return music_player.player.get_time() // 1000  
+        try:
+            # Return the current playback time in seconds
+            return music_player.player.get_time() // 1000
+        except Exception as e:
+            print(f"Error retrieving current playback time: {e}")
+            return 0
         
     @staticmethod
     def get_progress(music_player: "MusicPlayer") -> float:
@@ -136,8 +177,8 @@ class TrackInfo:
         if not music_player.current_track:
             return 0.0
 
-        duration = TrackInfo.get_audio_duration(music_player.current_track)
-        current_time = TrackInfo.get_current_time(music_player)
+        duration = TrackInfo.get_audio_duration_int(music_player.current_track)
+        current_time = TrackInfo.get_current_time_int(music_player)
 
         if duration > 0:
             return (current_time / duration) * 100

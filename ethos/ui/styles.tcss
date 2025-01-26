@@ -1,0 +1,7 @@
+#rich-layout-widget {
+    height: 100%;
+}
+
+Input {
+    dock: bottom;
+}

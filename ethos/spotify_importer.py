@@ -100,7 +100,7 @@ class SpotifyImporter:
 if __name__ == "__main__":
     client_id = os.getenv("SPOTIPY_CLIENT_ID")
     client_secret = os.getenv("SPOTIPY_CLIENT_SECRET")
-    redirect_uri = os.getenv("REDIRECT_URI")
+    redirect_uri = os.getenv("REDIRECT_URI") or "http://localhost:3000/"
 
     importer = SpotifyImporter(client_id, client_secret, redirect_uri)
     playlists = importer.fetch_playlists()

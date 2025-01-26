@@ -74,6 +74,7 @@ class ConfigManager:
         if self.config_file.exists():
             self.config_file.unlink()
 
+
 def get_music_folder() -> Optional[Path]:
     """
     Retrieves the music folder path using the `ConfigManager`.

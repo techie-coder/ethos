@@ -95,3 +95,6 @@ dmypy.json
 
 
 .cache
+
+#shell-script
+./run_ui.sh
