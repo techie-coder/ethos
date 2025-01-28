@@ -2,10 +2,10 @@ from textual.app import App, ComposeResult
 from textual.reactive import reactive
 from textual.widgets import Input
 from textual import work
-from ethos.ui.rich_layout import RichLayout
-from ethos.player import MusicPlayer, TrackInfo
-from ethos.tools import helper
-from ethos.utils import fetch_tracks_list, get_audio_url, fetch_recents, add_track_to_recents
+from ui.rich_layout import RichLayout
+from player import MusicPlayer, TrackInfo
+from tools import helper
+from utils import fetch_tracks_list, get_audio_url, fetch_recents, add_track_to_recents, fetch_tracks_from_playlist, add_track_to_playlist
 import random
 
 class TextualApp(App):
@@ -34,6 +34,8 @@ class TextualApp(App):
     volume = reactive(50)
     should_play_queue = reactive(False)
     recents = reactive([])
+    current_track_duration = reactive("")
+    show_playlists = reactive(False)
 
     def compose(self) -> ComposeResult:
         """Composer function for textual app"""
@@ -52,7 +54,6 @@ class TextualApp(App):
             layout_widget.update_dashboard(self.recents, "Recents :-")
         else:
             layout_widget.update_dashboard("You have not played any tracks yet!", "")
-        self.endless_playback()
         self.set_interval(1, self.update_track_progress)
 
     @work
@@ -65,6 +66,7 @@ class TextualApp(App):
         if event.value:
             if event.value.startswith("/play"):
                 search_track = self.helper.parse_command(event.value)
+                layout_widget.update_log("Searching for tracks")
                 self.tracks_list = await fetch_tracks_list(search_track)
                 if self.tracks_list:
                     layout_widget.update_dashboard(self.tracks_list, "Type track no. to be played :-")
@@ -75,6 +77,7 @@ class TextualApp(App):
                 self.should_play_queue = False
                 self.track_to_play = self.tracks_list[int(event.value)-1]
                 self.handle_play(self.track_to_play)
+                layout_widget.update_log("Playing track from search")
                 self.update_input()
 
             if event.value.startswith("/volume"):
@@ -94,14 +97,13 @@ class TextualApp(App):
             if event.value.isdigit() and self.select_from_queue:
                 self.should_play_queue = True
                 self.track_to_be_added_to_queue = self.queue_options[int(event.value)-1]
-                self.queue[self.search_track] = self.track_to_be_added_to_queue
-                self.queue_options = []
+                self.queue[self.search_track] = helper.Format.clean_hashtag(self.track_to_be_added_to_queue)
                 self.update_input()
                 self.search_track=""
 
             if event.value.startswith("/show-queue"):
                 tracks = self.queue.values()
-                data = "\n".join(tracks)
+                data = "\n".join(f"{i+1}. {track}" for i, track in enumerate(tracks))
                 layout_widget.update_dashboard(data, "Current Queue :-")
                 self.update_input()
 
@@ -110,17 +112,20 @@ class TextualApp(App):
 
             if event.value.startswith("/resume"):
                 self.action_resume()
+
+            if event.value.startswith("/qp"):
+                ind = int(helper.Format.parse_command(event.value))
+                keys = list(self.queue.keys())
+                key = keys[ind-1]
+                queue = list(self.queue.values())
+                track = queue[ind-1]
+                del self.queue[key]
+                self.handle_play(track)
+                layout_widget.update_log("Playing track from current queue")
+                self.update_input()
             
-            self.endless_playback()
+
             
-    @work(exclusive=True)
-    async def endless_playback(self):
-            if self.player.get_state() == 'State.Stopped':
-                if self.queue:
-                    track_key = (list(self.queue.keys()))[0]
-                    track_value = (list(self.queue.values()))[0]
-                    self.handle_play(track_value)
-                    del self.queue[track_key]
 
 
     def action_pause(self):
@@ -133,7 +138,7 @@ class TextualApp(App):
     def action_resume(self):
         """Resume the player"""
         layout_widget = self.query_one(RichLayout)
-        if self.player.is_playing:
+        if not self.player.is_playing:
             self.player.resume()
             layout_widget.update_playing_status()
 
@@ -160,6 +165,7 @@ class TextualApp(App):
         self.player.play(url)
         add_track_to_recents(helper.Format.clean_hashtag(track_name))
         layout_widget.update_track(track_name)
+        self.current_track_duration = TrackInfo.get_audio_duration(url)
         layout_widget.update_total_track_time(TrackInfo.get_audio_duration(url))
         color_ind = random.randint(0,9)
         layout_widget.update_color(color_ind)
@@ -174,5 +180,15 @@ class TextualApp(App):
         """Function to update track progress"""
         layout_widget = self.query_one(RichLayout)
         layout_widget.update_music_progress(TrackInfo.get_current_time(self.player), int(TrackInfo.get_progress(self.player)))
+        if self.current_track_duration == TrackInfo.get_current_time(self.player):
+            if self.queue:
+                keys = list(self.queue.keys())
+                tracks = list(self.queue.values())
+                key = keys[0]
+                track = tracks[0]
+                del self.queue[key]
+                self.handle_play(track)
+                layout_widget.update_log("Currently playing from queue")
+
   
     

@@ -2,13 +2,13 @@ from textual.widget import Widget
 from textual.reactive import reactive
 from rich.layout import Layout
 from rich.text import Text
+from rich.padding import Padding
 from rich.align import Align
 from rich.panel import Panel
 from rich.progress_bar import ProgressBar
 from typing import Optional
-from ethos.ui.utils import assets
-from ethos.ui.utils import square_drawer
-from ethos.tools import helper
+from ui.utils import assets, square_drawer
+from tools import helper
 from datetime import datetime
 
 
@@ -32,7 +32,7 @@ class RichLayout(Widget):
     dashboard_title = reactive("")
     dashboard_data = reactive("")
     volume = reactive(50)
-    colors_ = ['magenta', 'green', 'blue', 'cyan', 'red', 'white', 'purple', 'orange3', 'yellow', 'grey62', 'turquoise2']
+    colors_ = ['bright_magenta', 'green3', 'blue', 'cyan1', 'bright_red', 'bright_white', 'dark_slate_gray2', 'orange3', 'yellow1', 'grey62', 'turquoise2']
     color = reactive("")
     random_int = reactive(0)
     style = reactive("")
@@ -41,6 +41,7 @@ class RichLayout(Widget):
     music_progress_int = 0
     total_track_time:str = reactive("")
     progress_bar = ProgressBar(total=100, completed=0)
+    log_data = reactive("")
 
 
     def on_mount(self) -> None:
@@ -59,7 +60,7 @@ class RichLayout(Widget):
         self.layout["player"].split_row(Layout(name="song_info", ratio=3), Layout(name="buttons", ratio=3), Layout(name="music-progress", ratio=3), Layout(name="volume", ratio=1))
         self.layout["music-progress"].split_row(Layout(name="music-progress-bar", ratio=3), Layout(name="music-progress-float", ratio=2))
         self.layout["song_info"].split_row(Layout(name="square", ratio=1), Layout(name="song-metadata", ratio=3))
-        self.layout["dashboard"].split(Layout(name="dashboard-title", size=3), Layout(name="dashboard-data"))
+        self.layout["dashboard"].split(Layout(name="dashboard-title", size=3), Layout(name="dashboard-data"), Layout(name="log", size=2))
     
 
     def update_layout(self):
@@ -114,8 +115,10 @@ class RichLayout(Widget):
         )
         self.layout["song-metadata"].update(
                 Align.left(
-                    Text(f" {self.current_song}\n {self.current_artist}",
-                         style=f"bold {self.color}"),
+                    Padding(f"{self.current_song}\n{self.current_artist}",
+                            (1,1),
+                            style=f"bold {self.color}",
+                         ),
                          vertical="middle"
                 )
         )
@@ -147,6 +150,14 @@ class RichLayout(Widget):
                      style="bold green",
                      justify="default"),
                      vertical="middle"
+            )
+        )
+        self.layout["log"].update(
+            Align.center(
+                Text(self.log_data,
+                    style="bold green",
+                    justify="center"),
+                    vertical="middle"
             )
         )
         
@@ -197,6 +208,10 @@ class RichLayout(Widget):
     def update_total_track_time(self, track_time: str) -> None:
         """Update total track time when a new track is played"""
         self.total_track_time = track_time
+        self.refresh()
+
+    def update_log(self, log_data: str) -> None:
+        self.log_data = log_data
         self.refresh()
 
     def render(self) -> Layout:
