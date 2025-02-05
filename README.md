@@ -54,10 +54,16 @@ ethos/
    ```
 
 3. **Install Dependencies:**
-   ```python
+   ```bash
    pip install -r requirements.txt
    ```
 4. **Setup the .env file:** see the `.env.example` for reference and create a `.env` file in the root.
+
+5. **Start the application:**
+   ```bash
+   python3 main.py #for linux/macOS
+   python main.py #for windows
+   ```
 
 ### For Distribution:
 

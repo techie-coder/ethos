@@ -95,6 +95,7 @@ dmypy.json
 
 
 .cache
+.DS_Store
 
 #shell-script
 ./run_ui.sh

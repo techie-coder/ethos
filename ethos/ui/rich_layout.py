@@ -145,8 +145,8 @@ class RichLayout(Widget):
                          vertical="middle")
             )
         self.layout["music-progress-float"].update(
-            Align.left(
-                Text(f" {self.music_progress if not self.music_progress.startswith("-") else "0.0"} / {self.total_track_time or "0.0"}",
+            Align.center(
+                Text(f"{self.music_progress if not self.music_progress.startswith('-') else '0.0'} / {self.total_track_time or '0.0'}",
                      style="bold green",
                      justify="default"),
                      vertical="middle"
@@ -212,6 +212,14 @@ class RichLayout(Widget):
 
     def update_log(self, log_data: str) -> None:
         self.log_data = log_data
+        self.refresh()
+
+    def show_commands(self) -> None:
+        commands = self.ASSETS.COMMANDS
+        self.dashboard_data = ""
+        self.dashboard_title = "List of valid commands :"
+        for key, value in commands.items():
+            self.dashboard_data = self.dashboard_data + "\n" + f"{key} : {value}"
         self.refresh()
 
     def render(self) -> Layout:
