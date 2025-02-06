@@ -10,8 +10,8 @@ authors = [
     {name = "Agasta", email = "rupam.golui@proton.me"},
     {name = "techie-coder", email = "saswata.biswas20@gmail.com"},
     {name = "ZotacMaster", email = "suchetan005@gmail.com"},
-    {name = "Sayan"},
-    {name = "Sourav"},
+    {name = "Saikat Mahara"},
+    {name = "Albin Mathew"},
 ]
 dependencies = [
     "yt-dlp==2025.01.15",
