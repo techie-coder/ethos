@@ -37,6 +37,9 @@ class TextualApp(App):
     current_track_duration = reactive("")
     show_playlists = reactive(False)
     layout_widget = ""
+    current_playlist = reactive("")
+    add_playlist = reactive(False)
+
 
     def compose(self) -> ComposeResult:
         """Composer function for textual app"""
@@ -83,7 +86,7 @@ class TextualApp(App):
                     pass
                     
 
-            if event.value.isdigit() and not self.select_from_queue:
+            if event.value.isdigit() and not self.select_from_queue and not self.add_playlist:
                 try:
                     self.should_play_queue = False
                     self.track_to_play = self.tracks_list[int(event.value)-1]
@@ -115,7 +118,7 @@ class TextualApp(App):
                     self.layout_widget.update_dashboard("Please enter a valid track name. You can view the list of commands using /help", "")
                     pass
 
-            if event.value.isdigit() and self.select_from_queue:
+            if event.value.isdigit() and self.select_from_queue and not self.add_playlist:
                 try:
                     self.should_play_queue = True
                     self.track_to_be_added_to_queue = self.queue_options[int(event.value)-1]
@@ -154,6 +157,40 @@ class TextualApp(App):
                 except ValueError:
                     self.layout_widget.update_dashboard("Please enter the no. of track you want to play", "")
                     pass
+            
+            if event.value == "/recents":
+                try:
+                    self.recents = UserFiles.fetch_recents()
+                    self.layout_widget.update_dashboard(self.recents, "Recents :")
+                    self.update_input()
+                except:
+                    pass
+
+            if event.value == "/sp" or event.value == "/show-playlists":
+                self.show_playlists()
+
+            if event.value.startswith("/ap"):
+                try:
+                    self.current_playlist, track_name = self.helper.parse_command(event.value)
+                    self.tracks_list = await Search.fetch_tracks_list(track_name)
+                    self.layout_widget.update_dashboard(self.tracks_list, f"Enter track number to be added to {self.current_playlist}")
+                    self.add_playlist = True
+                    self.update_input()
+                except:
+                    pass
+            
+            if event.value.isdigit() and self.add_playlist:
+                try:
+                    track_name = self.tracks_list[event.value - 1]
+                    UserFiles.add_track_to_playlist(self.current_playlist, track_name)
+                    self.update_input()
+                except:
+                    pass
+            
+            if event.value.startswith("/vp"):
+                playlist_name = self.helper.parse_command(event.value)
+                self.show_tracks_from_playlist(playlist_name)
+                self.update_input()
             
             if event.value == "/recents":
                 try:
@@ -238,6 +275,16 @@ class TextualApp(App):
             self.layout_widget.update_dashboard(data, "Playlist Contents :")
         except:
             pass
+
+
+    def show_tracks_from_playlist(self, playlist: str) -> None:
+        try:
+            playlist = UserFiles.fetch_tracks_from_playlist(playlist)
+            data = "\n".join(f"{i+1}. {track}" for i, track in enumerate(playlist))
+            self.layout_widget.update_dashboard(data, "Playlist Contents :")
+        except:
+            pass
+
 
     def add_to_playlist(self, track, playlist: str) -> None:
         try:
