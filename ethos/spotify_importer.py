@@ -115,4 +115,4 @@ if __name__ == "__main__":
 
     print(f"Playlist '{selected_playlist['name']}' has been saved.")
     
-    # importer.refresh_all_playlists() # Refresh all playlists
+    importer.refresh_all_playlists() # Refresh all playlists
