@@ -212,6 +212,8 @@ ethos/
 │   ├── dockerfile
 │   ├── compose.yaml
 │   └── readme.md
+├── src/
+│   └── img/
 ├── ethos/
 │   ├── __init__.py
 │   ├── main.py    # entry point of the application.
