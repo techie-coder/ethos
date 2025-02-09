@@ -144,7 +144,11 @@ Coming Soon
 
 ## Usage:
 
-[![Watch the video](src/img/ethos_ui.jpg)](https://www.youtube.com/watch?v=E1AjSHxe5NU&feature=youtu.be)
+
+
+https://github.com/user-attachments/assets/e46a7585-ccf1-4e30-bc20-3c48b0767969
+
+
 
 ### Basic Commands
 
