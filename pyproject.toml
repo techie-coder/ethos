@@ -14,7 +14,7 @@ authors = [
     {name = "Albin Mathew"},
 ]
 dependencies = [
-    "yt-dlp==2025.01.15",
+    "yt-dlp==2025.01.26",
     "python-vlc==3.0.21203",
     "spotipy==2.25.0",
     "textual==1.0.0",
@@ -22,6 +22,9 @@ dependencies = [
     "python-dotenv==1.0.1",
     "httpx>=0.28.1"
 ]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<4.0.0"
 
 [project.optional-dependencies]
 dev = [
