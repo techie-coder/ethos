@@ -118,24 +118,29 @@ ethos
    git clone https://github.com//Itz-Agasta/ethos.git
    cd ethos
    ```
-2. **Set Up a Virtual Environment:**
+2. **Install Poetry:**
 
    ```bash
-   python -m venv .venv
-   source .venv/bin/activate       # For MacOS/Linux
-   .venv\Scripts\activate          # For Windows
+   pipx install poetry
    ```
 
-3. **Install Dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. **Setup the .env file:** see the `.env.example` for reference and create a `.env` file in the root.
+   > **Note:** It is recommended to use `pipx` for installing Poetry, but you can also use `pip` if `pipx` is not available. For more information, please refer to the [official documentation](https://python-poetry.org/docs/).
 
-5. **Start the application:**
+3. **Configure Poetry to Create Virtual Environment in Project Root:**
+
+   ```sh
+   poetry config virtualenvs.in-project true
+   ```
+
+4. **Install Dependencies:**
    ```bash
-   python3 main.py #for linux/macOS
-   python main.py #for windows
+   poetry install
+   ```
+5. **Setup the .env file:** see the `.env.example` for reference and create a `.env` file in the root.
+
+6. **Start the application:**
+   ```bash
+   poetry run python ethos/main.py
    ```
 
 ### For Distribution:
@@ -144,11 +149,7 @@ Coming Soon
 
 ## Usage:
 
-
-
 https://github.com/user-attachments/assets/e46a7585-ccf1-4e30-bc20-3c48b0767969
-
-
 
 ### Basic Commands
 

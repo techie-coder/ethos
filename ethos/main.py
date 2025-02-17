@@ -1,11 +1,9 @@
-
 ########################
 # Entry point of Ethos #
 ########################
 
 import os
 import sys
-#sys.path.append(os.getcwd())
 
 from ethos.ui import ui
 
