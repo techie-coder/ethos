@@ -103,7 +103,7 @@ Make sure you have the following installed:
 
 ```bash
 # Install Ethos
-pip install ethos
+pipx install ethos
 
 # Start playing music
 ethos
@@ -145,7 +145,7 @@ ethos
 
 ### For Distribution:
 
-Coming Soon
+Follow the official Ethos docs on how to install ethos properly based on your system.
 
 ## Usage:
 
