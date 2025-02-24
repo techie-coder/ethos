@@ -6,11 +6,11 @@
 
 <div align="center">
 
-[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python Version](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![PyPI version](https://badge.fury.io/py/ethos-cli.svg)](https://pypi.org/project/ethos-cli/)
+[![Downloads](https://img.shields.io/pypi/dm/ethos-cli.svg)](https://pypi.org/project/ethos-cli/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Itz-Agasta/ethos/pulls)
-[![Code Coverage](https://img.shields.io/codecov/c/github/Itz-Agasta/ethos)](https://codecov.io/gh/Itz-Agasta/ethos)
-[![Downloads](https://img.shields.io/pypi/dm/ethos)](https://pypi.org/project/ethos/)
 [![GitHub Issues](https://img.shields.io/github/issues/Itz-Agasta/ethos)](https://github.com/Itz-Agasta/ethos/issues)
 [![GitHub Stars](https://img.shields.io/github/stars/Itz-Agasta/ethos)](https://github.com/Itz-Agasta/ethos/stargazers)
 [![Last Commit](https://img.shields.io/github/last-commit/Itz-Agasta/ethos)](https://github.com/Itz-Agasta/ethos/commits/main)
@@ -23,6 +23,8 @@
     <br />
     <a href="https://www.youtube.com/watch?v=E1AjSHxe5NU&feature=youtu.be">View Demo</a>
     ·
+    <a href="https://vyse-1.gitbook.io/ethos/">Documentation</a>
+    .
     <a href="https://github.com/Itz-Agasta/ethos/issues">Report Bug</a>
     ·
     <a href="https://github.com/Itz-Agasta/ethos/issues">Request Feature</a>
@@ -95,16 +97,23 @@
 
 Make sure you have the following installed:
 
-- Python 3.8 or later
-- pip (Python package installer)
+- Python 3.9 or later
+- pipx (Recommended) or pip
 - VLC media player
+
+For detailed system-specific requirements and setup instructions, please refer to our [official documentation](https://vyse-1.gitbook.io/ethos/).
 
 ## Quick Start
 
 ```bash
-# Install Ethos
-pipx install ethos
+# Install using pipx (recommended)
+pipx install ethos-cli
 
+# Or using pip
+pip install ethos-cli
+```
+
+```bash
 # Start playing music
 ethos
 ```
@@ -114,10 +123,12 @@ ethos
 ### For Development:
 
 1. **Clone the Repository:**
+
    ```bash
    git clone https://github.com//Itz-Agasta/ethos.git
    cd ethos
    ```
+
 2. **Install Poetry:**
 
    ```bash
@@ -145,7 +156,7 @@ ethos
 
 ### For Distribution:
 
-Follow the official Ethos docs on how to install ethos properly based on your system.
+Visit the [Official Ethos Documentation](https://vyse-1.gitbook.io/ethos/) for detailed installation instructions based on your system.
 
 ## Usage:
 
