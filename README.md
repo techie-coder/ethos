@@ -147,9 +147,13 @@ ethos
    ```bash
    poetry install
    ```
-5. **Setup the .env file:** see the `.env.example` for reference and create a `.env` file in the root.
+5. **Install Development Dependencies:**
+   ```bash
+   poetry install --with dev # install all the necessary dependencies for development. (eg: pytest)
+   ```
+6. **Setup the .env file:** see the `.env.example` for reference and create a `.env` file in the root.
 
-6. **Start the application:**
+7. **Start the application:**
    ```bash
    poetry run python ethos/main.py
    ```
