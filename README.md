@@ -155,7 +155,7 @@ ethos
 
 7. **Start the application:**
    ```bash
-   poetry run python ethos/main.py
+   poetry run ethos
    ```
 
 ### For Distribution:
