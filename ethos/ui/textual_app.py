@@ -29,6 +29,7 @@ class TextualApp(App):
     queue = reactive({})
     queue_options = reactive([])
     search_track = reactive("")
+    current_track = reactive("")
     select_from_queue = reactive("")
     track_url = reactive("")
     volume = reactive(50)
@@ -101,6 +102,7 @@ class TextualApp(App):
                 try:
                     volume_to_be_set = self.helper.parse_command(event.value)
                     self.player.set_volume(volume_to_be_set)
+                    self.volume = volume_to_be_set
                     self.update_input()
                     self.layout_widget.update_volume(volume_to_be_set)
                 except ValueError:
@@ -273,9 +275,11 @@ class TextualApp(App):
     def handle_play(self, track_name: str):
         """Function to handle the track playback"""
         try:
+            self.current_track = track_name
             url = Search.get_audio_url(track_name+" official music video")
             self.track_url = url
             self.player.play(url)
+            self.player.set_volume(self.volume)
             UserFiles.add_track_to_recents(helper.Format.clean_hashtag(track_name))
             self.layout_widget.update_track(track_name)
             self.current_track_duration = TrackInfo.get_audio_duration(url)
@@ -349,6 +353,15 @@ class TextualApp(App):
                     self.layout_widget.update_log("Currently playing from queue")
                 except:
                     pass
-
-  
-    
+            
+        if str(self.player.get_state()) == "State.Playing" and not self.queue:
+            try:
+                self.layout_widget.update_log("Adding new songs to queue")
+                track_suggestions = Search.get_similar_tracks(self.current_track)
+                tracks = track_suggestions.splitlines()
+                for track in tracks:
+                    if track:
+                        self.queue[track] = track
+                        
+            except:
+                pass
