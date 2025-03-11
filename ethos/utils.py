@@ -7,9 +7,6 @@ import httpx
 from pathlib import Path
 from ethos.tools.helper import Format
 import json
-from groq import Groq
-import re
-
 load_dotenv()
 
 class Search:
@@ -190,7 +187,7 @@ class Search:
                         "name": track["name"],
                         "artist": track["artists"][0]["name"]
                     })
-                print(tracks)
+                #print(tracks)
                 return tracks
             else:
                 raise Exception(f"Failed to fetch top tracks: {response.json()}")
@@ -220,42 +217,13 @@ class Search:
     
             
     @staticmethod
-    def get_similar_tracks(track_name: str) -> str:
-        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-        results = ""
-        final_response = ""
-        completion = client.chat.completions.create(
-            model="llama3-8b-8192",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a music recommendation bot and you are to recommend similar songs preferrably of similar or same artists as well as language and market, given input a song name by the user as text file containing only the required data. This is to be shown to the user. Exclude description and unnecessary song metadata. Format should be :\n<Song Name> by <Artist Name>\n(10 entries)"
-                },
-                {
-                    "role": "user",
-                    "content": track_name
-                }
-            ],
-            temperature=1,
-            max_completion_tokens=1024,
-            top_p=1,
-            stream=True,
-            stop=None,
-        )
-
-        for chunk in completion:
-            results += chunk.choices[0].delta.content or ""
-            
-        
-        matches=re.findall("?<=\d+\. )(.+? by .+", results)
-
-
-        # Print extracted data
-        for match in matches:
-            final_response = final_response + "\n" + match
-
-        return final_response
-
+    async def get_similar_tracks(track_name: str) -> list[str] :
+        """Adds songs based on current artist to queue if the queue is empty"""
+        song, artist = Format.extract_song_and_artist(track_name)
+        token = await Search.get_spotify_token()
+        artist_id = await Search.search_artist_id_from_spotify(artist_name=artist, token=token)
+        top_tracks = await Search.fetch_top_tracks(artist_id=artist_id, token=token)
+        return top_tracks
     
 
 class UserFiles:
@@ -381,3 +349,4 @@ class UserFiles:
         except:
             pass
             return        
+        

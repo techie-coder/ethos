@@ -213,14 +213,17 @@ class TextualApp(App):
                 self.show_playlists()
 
             if event.value.startswith("/ap"):
+                """Adds a track to playlist"""
                 playlist_name, track_name = self.helper.parse_command(event.value)
                 self.add_to_playlist(track_name, playlist_name)
 
             if event.value.startswith("/vp"):
+                """Lists tracks from a particular playlist"""
                 playlist_name = self.helper.parse_command(event.value)
                 self.show_tracks_from_playlist(playlist_name)
 
             if event.value.startswith("/sf"):
+                """Skips forward in the track"""
                 try:
                     interval = int(self.helper.parse_command(event.value))
                     if interval:
@@ -231,12 +234,21 @@ class TextualApp(App):
                     pass
             
             if event.value.startswith("/sb"):
+                """Skip backward in the track"""
                 try:
                     interval = int(self.helper.parse_command(event.value))
                     if interval:
                         self.player.skip_backward(interval)
                     else:
                         self.player.skip_backward()
+                except:
+                    pass
+            
+            if event.value == "/clq":
+                """Clears the queue"""
+                try:
+                    self.queue = {}
+                    self.current_track = ""
                 except:
                     pass
                 
@@ -329,12 +341,13 @@ class TextualApp(App):
         input_widget.placeholder = ""
         input_widget.value = ""
     
-    def update_(self) -> None:
+    @work
+    async def update_(self) -> None:
         """Function to update track progress and check for queue"""
         
         try:   
             self.layout_widget.update_music_progress(TrackInfo.get_current_time(self.player), int(TrackInfo.get_progress(self.player)))
-            #self.layout_widget.update_log(str(self.player.get_state()))
+
         except:
             pass
 
@@ -357,11 +370,14 @@ class TextualApp(App):
         if str(self.player.get_state()) == "State.Playing" and not self.queue:
             try:
                 self.layout_widget.update_log("Adding new songs to queue")
-                track_suggestions = Search.get_similar_tracks(self.current_track)
-                tracks = track_suggestions.splitlines()
-                for track in tracks:
-                    if track:
-                        self.queue[track] = track
-                        
-            except:
-                pass
+                track_suggestions = await Search.get_similar_tracks(self.current_track)
+                for track in track_suggestions:
+                    entry = f"{track['name']} by {track['artist']}"
+                    name = track['name']
+                    song, artist = helper.Format.extract_song_and_artist(self.current_track)
+                    """Prevents duplicate entries since artist top tracks might have the same song thats playing"""
+                    if name != song:
+                        self.queue[name] = entry
+
+            except Exception as e:
+                print(f"Error fetching similar tracks: {e}")
