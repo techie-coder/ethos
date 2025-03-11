@@ -42,8 +42,8 @@ textual = "1.0.0"
 rich = "13.9.4"
 python-dotenv = "1.0.1"
 httpx = ">=0.28.1"
-ytmusicapi = "^1.10.2"
-groq = "^0.18.0"
+
+
 
 [tool.poetry.group.dev]
 optional = true
