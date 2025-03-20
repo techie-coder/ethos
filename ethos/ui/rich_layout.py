@@ -185,13 +185,29 @@ class RichLayout(Widget):
         self.refresh()
 
 
-    def update_dashboard(self, data: any, title: Optional[str]) -> None:
-        """Dynamically update dashboard data based on user interactions"""
-        if type(data) == list:
-            self.dashboard_data = "\n".join(data) + "\nType track number to play"
-        if type(data) == str:
+    def update_dashboard(self, data: any, title: Optional[str], start_idx: int = 0) -> None:
+        """
+        Dynamically update dashboard data based on user interactions.
+        
+        Args:
+            data: Content to display (list or str)
+            title: Optional title for the dashboard
+            start_idx: Starting index for list slicing (default=0)
+        """
+        if data is None:
+            self.dashboard_data = ""
+        elif isinstance(data, list):
+            if not data:  
+                self.dashboard_data = ""
+            else:
+                start_idx = max(0, min(start_idx, len(data))) 
+                self.dashboard_data = "\n".join(data[start_idx : start_idx + 10])
+        elif isinstance(data, str):
             self.dashboard_data = data
-        self.dashboard_title = title
+        else:
+            self.dashboard_data = str(data)  
+            
+        self.dashboard_title = title or "" 
         self.refresh()
 
 

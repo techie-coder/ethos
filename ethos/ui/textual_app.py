@@ -29,6 +29,8 @@ class TextualApp(App):
     importer = SpotifyImporter()
     
     volume = reactive(50)
+    rows_per_page = 10
+    start_idx = 0
     should_play_queue = reactive(False)
     should_play_playlist = reactive(False)
     show_playlists = reactive(False)
@@ -48,8 +50,9 @@ class TextualApp(App):
     current_track_duration = reactive("")
     layout_widget = ""
     current_playlist = reactive("")
+    dashboard_data = reactive("")
+    dashboard_title = reactive("")
     
-
 
     def compose(self) -> ComposeResult:
         """Composer function for textual app"""
@@ -81,15 +84,31 @@ class TextualApp(App):
 
         self.input = event.value
         
-        
         if event.value:
+            if not event.value.startswith("/"):
+                """Enables data scrolling"""
+                if event.value.lower() == "n":
+                    """Scroll down"""
+                    self.start_idx += self.rows_per_page
+                    self.layout_widget.update_dashboard(self.dashboard_data, self.dashboard_title, self.start_idx)
+                    
+                if event.value.lower() == "p":
+                    """Scroll Up"""
+                    self.start_idx -= self.rows_per_page if self.start_idx >= 10 else 0
+                    self.layout_widget.update_dashboard(self.dashboard_data, self.dashboard_title, self.start_idx)
+            
+            
             if event.value.startswith("/play") or event.value.startswith("/pl"):
+                """Plays a track from spotify search"""
                 try:
                     search_track = self.helper.parse_command(event.value)
                     self.layout_widget.update_log("Searching for tracks")
                     self.tracks_list = await Search.fetch_tracks_list(search_track)
                     if self.tracks_list:
-                        self.layout_widget.update_dashboard(self.tracks_list, "Type track no. to be played :-")
+                        self.dashboard_data = self.tracks_list
+                        self.dashboard_title = "Search Results"
+                        self.start_idx = 0
+                        self.layout_widget.update_dashboard(self.tracks_list, self.dashboard_title)
                         self.update_input()
                         self.select_from_queue = False
                 except ValueError:
@@ -109,6 +128,7 @@ class TextualApp(App):
                     pass
                 
             if event.value.startswith("/alb"):
+                """Searches and plays an album"""
                 try:
                     album_name = self.helper.parse_command(event.value)
                     self.layout_widget.update_dashboard(f"Searching for Album: {album_name}", "Album")
@@ -162,10 +182,14 @@ class TextualApp(App):
                     pass
             
             if event.value.startswith("/queue-add") or event.value.startswith("/qa"):
+                """Adds a track to queue"""
                 try:
                     self.search_track = self.helper.parse_command(event.value)
                     self.queue_options = await Search.fetch_tracks_list(self.search_track)
                     if self.queue_options:
+                        self.dashboard_data = self.queue_options
+                        self.dashboard_title = "Type track no. to be added to queue:-"
+                        self.start_idx = 0
                         self.layout_widget.update_dashboard(self.queue_options, "Type track no. to be added to queue :-")
                         self.update_input()
                         self.select_from_queue = True
@@ -185,9 +209,15 @@ class TextualApp(App):
                     pass
 
             if event.value.startswith("/show-queue") or event.value == "/sq":
+                """Shows the current queue"""
                 try:
                     tracks = self.queue
-                    data = "\n".join(f"{i+1}. {track}" for i, track in enumerate(tracks))
+                    data = []
+                    for idx, track in enumerate(tracks):
+                        data.append(f"{idx+1}. {track}")
+                    self.dashboard_data = data
+                    self.dashboard_title = "Current Queue :-"
+                    self.start_idx = 0
                     self.layout_widget.update_dashboard(data, "Current Queue :-")
                     self.update_input()
                 except:
@@ -206,6 +236,7 @@ class TextualApp(App):
                 self.update_input()
 
             if event.value.startswith("/qp"):
+                """Plays a specific track from queue"""
                 try:
                     ind = int(helper.Format.parse_command(event.value)) - 1
                     if ind > 0:
@@ -221,7 +252,8 @@ class TextualApp(App):
             if event.value == "/recents":
                 try:
                     self.recents = UserFiles.fetch_recents()
-                    self.layout_widget.update_dashboard(self.recents, "Recents :")
+                    self.start_idx = 0
+                    self.layout_widget.update_dashboard(self.recents, "Recents :", self.start_idx)
                     self.update_input()
                 except:
                     pass
@@ -233,6 +265,7 @@ class TextualApp(App):
                 self.layout_widget.update_dashboard(f"Playlist {playlist_name} was created", "Success")
                 
             if event.value == "/sp" or event.value == "/show-playlists":
+                """Shows playlists"""
                 self.show_playlists()
 
             if event.value.startswith("/ap"):
@@ -240,6 +273,12 @@ class TextualApp(App):
                 try:
                     self.current_playlist, track_name = self.helper.parse_command(event.value)
                     self.tracks_list = await Search.fetch_tracks_list(track_name)
+                    data = []
+                    for idx, track in enumerate(self.tracks_list):
+                        data.append(f"{idx+1}. {track}")
+                    self.dashboard_data = data
+                    self.dashboard_title = f"Enter track number to be added to {self.current_playlist}"
+                    self.start_idx = 0
                     self.layout_widget.update_dashboard(self.tracks_list, f"Enter track number to be added to {self.current_playlist}")
                     self.add_playlist = True
                     self.update_input()
@@ -253,14 +292,18 @@ class TextualApp(App):
                         UserFiles.add_track_to_playlist(self.current_playlist, track_name)
                         self.update_input()
                         self.add_playlist = not self.add_playlist
+                        self.update_input()
                 except:
                     pass
             
             if event.value.startswith("/vp"):
                 """Shows contents of a particular playlist"""
-                playlist_name = self.helper.parse_command(event.value)
-                self.show_tracks_from_playlist(playlist_name)
-                self.update_input()
+                try: 
+                    playlist_name = self.helper.parse_command(event.value)
+                    self.show_tracks_from_playlist(playlist_name)
+                    self.update_input()
+                except:
+                    pass
             
             if event.value == "/recents":
                 """Shows last 10 tracks played"""
@@ -318,11 +361,12 @@ class TextualApp(App):
                 """Plays previous track"""
                 try:
                     if self.queue:
-                        self.queue.insert(self.current_track)
+                        self.queue.insert(0, self.current_track)
                     recents = UserFiles.fetch_recents()
-                    prev = recents[0]
-                    self.handle_play(prev)
-                    self.update_input()
+                    if recents:
+                        prev = recents[1]
+                        self.handle_play(prev)
+                        self.update_input()
                 except:
                     pass
             
@@ -339,12 +383,14 @@ class TextualApp(App):
                 """Prompts user to log in to their spotify for importing playlist"""
                 self.layout_widget.update_dashboard("Redirecting you to browser. Please log in to your spotify account to import the playlist of your choice!", "Redirect")
                 self.spotify_playlists = self.importer.fetch_playlists()
-                data = ""
+                data = []
                 if self.spotify_playlists:
                     self.layout_widget.update_log("Playlists fetched!")
                     for idx, playlist in enumerate(self.spotify_playlists):
-                        data = data + f"{idx+1}. {playlist['name']}" + "\n"
-                    data = data + "Type playlist no. to import"
+                        data.append(f"{idx+1}. {playlist['name']}")
+                    self.dashboard_data = data
+                    self.dashboard_title = "Fetched Playlists"
+                    self.start_idx = 0
                     self.layout_widget.update_dashboard(data, "Fetched Playlists")
                     self.import_playlist = True
                 self.update_input()
@@ -416,10 +462,12 @@ class TextualApp(App):
     def show_playlists(self) -> None:
         try:
             playlists = UserFiles.fetch_playlists()
-            data = ""
-            if playlists:
-                for idx, playlist in enumerate(playlists):
-                    data = data + f"{idx+1}. {playlist}" + "\n"
+            data = []
+            for idx, playlist in enumerate(playlists):
+                data.append(f"{idx+1}. {playlist}")
+            self.dashboard_data = data
+            self.dashboard_title = "Playlists"
+            self.start_idx = 0
             self.layout_widget.update_dashboard(data, "Your playlists")
         except:
             pass
@@ -427,7 +475,12 @@ class TextualApp(App):
     def show_tracks_from_playlist(self, playlist: str) -> None:
         try:
             playlist = UserFiles.fetch_tracks_from_playlist(playlist)
-            data = "\n".join(f"{i+1}. {track}" for i, track in enumerate(playlist))
+            data = []
+            for idx, track in enumerate(playlist):
+                data.append(f"{idx+1}. {track}")
+            self.dashboard_data = data
+            self.dashboard_title = "Playlist Contents"
+            self.start_idx = 0
             self.layout_widget.update_dashboard(data, "Playlist Contents :")
         except:
             pass
@@ -465,8 +518,10 @@ class TextualApp(App):
                     self.queue.pop(0)
                     self.handle_play(track)
                     entries = self.queue
-                    data = "\n".join(f"{i+1}. {track}" for i, track in enumerate(entries))
-                    self.layout_widget.update_dashboard(data, "Current Queue :-")
+                    self.dashboard_data = entries
+                    self.dashboard_title = "Current Queue:-"
+                    self.start_idx = 0
+                    self.layout_widget.update_dashboard(entries, "Current Queue :-")
                     self.layout_widget.update_log("Currently playing from queue")
                 except:
                     pass
@@ -474,8 +529,6 @@ class TextualApp(App):
         if str(self.player.get_state()) == "State.Playing" and not self.queue:
             try:
                 self.layout_widget.update_log("Adding new songs to queue") if self.current_track else self.layout_widget.update_log("Queue deleted, play a new song to add new queue!")
-                if self.current_track:
-                    self.layout_widget.update_log(self.current_track)
                 track_suggestions = Search.get_similar_tracks(self.current_track)
                 if track_suggestions:
                     self.layout_widget.update_log("Suggestions fetched!")

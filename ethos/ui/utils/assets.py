@@ -46,13 +46,21 @@ _/ __ \   __\  |  \ /  _ \/  ___/
     }
 
     COMMANDS = {
-        "/play <track name>": "to play a specific track",
-        "/pause": "to pause player",
-        "/resume": "to resume player",
-        "/volume <number>": "to set volume to a certain %",
-        "/queue-add <track name>": "to add a track to current queue",
-        "/show-queue": "to show current queue",
+        "/play <track name> or /pl": "to play a specific track",
+        "/pause or /ps" : "to pause player",
+        "/resume or /r": "to resume player",
+        "/volume <number> or /vl": "to set volume to a certain %",
+        "/sf <seconds>": "to skip forward",
+        "/sb <seconds>": "to skip backward",
+        "/next": "to play next track from queue",
+        "/prev": "to play previous track from queue",
+        "/queue-add <track name> or /qa": "to add a track to current queue",
+        "/show-queue or /sq": "to show current queue",
         "/recents": "to show recents",
-        "/qp <track number>": "to play the track at the given position in queue"
+        "/qp <track number>": "to play the track at the given position in queue",
+        "/ip": "to import playlists from user's spotify account",
+        "/pt": "to play a particular playlist",
+        "/cp": "Create a new playlist",
+        "/ap <Playlist Name> <Track name>": "to add a track to a playlist mentioned"
     }
 
