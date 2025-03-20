@@ -396,3 +396,18 @@ class UserFiles:
             pass
             return        
         
+    @staticmethod
+    def create_playlist(playlist_name: str) -> None:
+        """
+        Function to add tracks to a playlist
+        
+        Args:
+        - playlist_name (str): name of a playlist
+        """
+        playlist_dir = Path.home() / ".ethos" / "userfiles" / "playlists"
+        playlist_file = playlist_dir / f"{playlist_name}.json"
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        open(playlist_file, "w").close()
+            
+            
+        

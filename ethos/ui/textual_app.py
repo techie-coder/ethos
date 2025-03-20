@@ -225,7 +225,13 @@ class TextualApp(App):
                     self.update_input()
                 except:
                     pass
-
+            
+            if event.value.startswith("/cp"):
+                """Creates a new playlist"""
+                playlist_name = helper.Format.parse_command(event.value)
+                UserFiles.create_playlist(playlist_name)
+                self.layout_widget.update_dashboard(f"Playlist {playlist_name} was created", "Success")
+                
             if event.value == "/sp" or event.value == "/show-playlists":
                 self.show_playlists()
 
@@ -243,9 +249,10 @@ class TextualApp(App):
             if event.value.isdigit() and self.add_playlist:
                 try:
                     if int(event.value) > 0:
-                        track_name = self.tracks_list[event.value - 1]
+                        track_name = self.tracks_list[int(event.value) - 1]
                         UserFiles.add_track_to_playlist(self.current_playlist, track_name)
                         self.update_input()
+                        self.add_playlist = not self.add_playlist
                 except:
                     pass
             
@@ -425,14 +432,6 @@ class TextualApp(App):
         except:
             pass
 
-
-    def show_tracks_from_playlist(self, playlist: str) -> None:
-        try:
-            playlist = UserFiles.fetch_tracks_from_playlist(playlist)
-            data = "\n".join(f"{i+1}. {track}" for i, track in enumerate(playlist))
-            self.layout_widget.update_dashboard(data, "Playlist Contents :")
-        except:
-            pass
 
 
     def add_to_playlist(self, track, playlist: str) -> None:

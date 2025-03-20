@@ -46,7 +46,7 @@ class Format:
         
         command_type, value = parts
     
-        if command_type == '/play' or command_type == '/pl' or command_type == '/queue-add' or command_type == '/queue-remove' or command_type == "/vp" or command_type == "/qa" or command_type == "/alb":
+        if command_type == '/play' or command_type == '/pl' or command_type == '/queue-add' or command_type == '/queue-remove' or command_type == "/vp" or command_type == "/qa" or command_type == "/alb" or command_type == "/cp":
             return value
         elif command_type == '/volume' or command_type == "/vl" or command_type == '/qp' or command_type == "/sf" or command_type == "/sb":
             try:
@@ -55,13 +55,11 @@ class Format:
                 raise ValueError("Volume must be a number")
         elif command_type == '/ap':
             try:
-                parts2 = value.split(maxsplit=1)
-                playlist_name, track_name = parts2
-
-                parts = value.split(maxsplit=1)
-                playlist_name, track_name = parts
-
-                return playlist_name, track_name
+                import re
+                text = value
+                pattern = r"'([^']+)'"
+                matches = re.findall(pattern, text)
+                return matches[0], matches[1]
             except:
                 pass
         
