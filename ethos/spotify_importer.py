@@ -1,8 +1,11 @@
 import os
 import json
 from pathlib import Path
+from dotenv import load_dotenv
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyOAuth
+
+load_dotenv()
 
 class SpotifyImporter:
     """
@@ -11,12 +14,12 @@ class SpotifyImporter:
     This class authenticates a user, fetches playlists, saves their tracks as JSON files,
     and provides methods to refresh playlist data.
     """
-    def __init__(self, client_id: str, client_secret: str, redirect_uri: str):
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.redirect_uri = redirect_uri
+    def __init__(self):
+        self.client_id = os.getenv("SPOTIFY_CLIENT_ID")
+        self.client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+        self.redirect_uri = os.getenv("REDIRECT_URI") or "http://localhost:3000/"
         self.spotify = self._authenticate()
-        self.config_dir = Path.home() / ".ethos"
+        self.config_dir = Path.home() / ".ethos" / "userfiles" / "playlists"
 
     def _authenticate(self) -> Spotify:
         scope = "user-library-read playlist-read-private"
@@ -50,8 +53,9 @@ class SpotifyImporter:
     def refresh_all_playlists(self):
         # Refreshes all playlists by fetching the latest data and saving it to JSON files.
         playlists = self.fetch_playlists()
-        for playlist in playlists:
-            self.refresh_playlist(playlist['id'], playlist['name'])
+        if playlists:
+            for playlist in playlists:
+                self.refresh_playlist(playlist['id'], playlist['name'])
 
     def refresh_playlist(self, playlist_id: str, playlist_name: str):
         """
@@ -97,12 +101,11 @@ class SpotifyImporter:
 ####################
 ## Temporary test ##
 ###################
+"""
 if __name__ == "__main__":
-    client_id = os.getenv("SPOTIFY_CLIENT_ID")
-    client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
-    redirect_uri = os.getenv("REDIRECT_URI") or "http://localhost:3000/"
+    
 
-    importer = SpotifyImporter(client_id, client_secret, redirect_uri)
+    importer = SpotifyImporter()
     playlists = importer.fetch_playlists()
 
     print("Available Playlists:")
@@ -115,4 +118,5 @@ if __name__ == "__main__":
 
     print(f"Playlist '{selected_playlist['name']}' has been saved.")
     
-    importer.refresh_all_playlists() # Refresh all playlists
+    importer.refresh_playlist(selected_playlist['id'], selected_playlist['name'])
+"""

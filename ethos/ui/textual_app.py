@@ -6,7 +6,9 @@ from ethos.ui.rich_layout import RichLayout
 from ethos.player import MusicPlayer, TrackInfo
 from ethos.tools import helper
 from ethos.utils import Search, UserFiles
+from ethos.spotify_importer import SpotifyImporter
 import random
+
 
 class TextualApp(App):
     """Textual Application Class for ethos UI"""
@@ -23,23 +25,30 @@ class TextualApp(App):
     ]
 
     player = MusicPlayer()
-    tracks_list = reactive([])
-    track_to_play = reactive("")
     helper = helper.Format()
+    importer = SpotifyImporter()
+    
+    volume = reactive(50)
+    should_play_queue = reactive(False)
+    should_play_playlist = reactive(False)
+    show_playlists = reactive(False)
+    add_playlist = reactive(False)
+    import_playlist = reactive(False)
+    
+    tracks_list = reactive([])
+    recents = reactive([])
     queue = reactive([])
+    spotify_playlists = reactive({})
     queue_options = reactive([])
+    track_to_play = reactive("")
     search_track = reactive("")
     current_track = reactive("")
     select_from_queue = reactive("")
     track_url = reactive("")
-    volume = reactive(50)
-    should_play_queue = reactive(False)
-    recents = reactive([])
     current_track_duration = reactive("")
-    show_playlists = reactive(False)
     layout_widget = ""
     current_playlist = reactive("")
-    add_playlist = reactive(False)
+    
 
 
     def compose(self) -> ComposeResult:
@@ -90,11 +99,12 @@ class TextualApp(App):
 
             if event.value.isdigit() and not self.select_from_queue and not self.add_playlist:
                 try:
-                    self.should_play_queue = False
-                    self.track_to_play = self.tracks_list[int(event.value)-1]
-                    self.handle_play(self.track_to_play)
-                    self.layout_widget.update_log("Playing track from search")
-                    self.update_input()
+                    if int(event.value) > 0:
+                        self.should_play_queue = False
+                        self.track_to_play = self.tracks_list[int(event.value)-1]
+                        self.handle_play(self.track_to_play)
+                        self.layout_widget.update_log("Playing track from search")
+                        self.update_input()
                 except:
                     pass
                 
@@ -111,11 +121,36 @@ class TextualApp(App):
                         self.layout_widget.update_log("Playing from Album Search!")
                         self.queue = []
                         del album_tracks[0]
-                        self.queue = album_tracks     
+                        self.queue = album_tracks + self.queue     
                 except:
                     pass
                 
+            if event.value == "/pt":
+                """Plays a playlist"""
+                try:
+                    self.show_playlists()
+                    self.layout_widget.update_log("Enter playlist number to be played!")
+                    self.should_play_playlist = True
+                    self.update_input()
+                except:
+                    pass
+                
+            if event.value.isdigit() and self.should_play_playlist:
+                if int(event.value) > 0:
+                    try:
+                        ind = int(event.value) - 1
+                        playlists = UserFiles.fetch_playlists()
+                        playlist = playlists[ind]
+                        tracks = UserFiles.fetch_tracks_from_playlist(playlist)
+                        self.handle_play(tracks[0])
+                        tracks.pop(0)
+                        self.queue = tracks + self.queue
+                        self.should_play_playlist = not self.should_play_playlist
+                    except:
+                        pass
+            
             if event.value.startswith("/volume") or event.value.startswith("/vl"):
+                """Controls the volume of the music player"""
                 try:
                     volume_to_be_set = self.helper.parse_command(event.value)
                     self.player.set_volume(volume_to_be_set)
@@ -140,11 +175,12 @@ class TextualApp(App):
 
             if event.value.isdigit() and self.select_from_queue and not self.add_playlist:
                 try:
-                    self.should_play_queue = True
-                    self.track_to_be_added_to_queue = self.queue_options[int(event.value)-1]
-                    self.queue.append(helper.Format.clean_hashtag(self.track_to_be_added_to_queue))
-                    self.update_input()
-                    self.search_track=""
+                    if int(event.value) > 0:
+                        self.should_play_queue = True
+                        self.track_to_be_added_to_queue = self.queue_options[int(event.value)-1]
+                        self.queue.append(helper.Format.clean_hashtag(self.track_to_be_added_to_queue))
+                        self.update_input()
+                        self.search_track=""
                 except:
                     pass
 
@@ -172,11 +208,12 @@ class TextualApp(App):
             if event.value.startswith("/qp"):
                 try:
                     ind = int(helper.Format.parse_command(event.value)) - 1
-                    track = self.queue[ind]
-                    del self.queue[ind]
-                    self.handle_play(track)
-                    self.layout_widget.update_log("Playing track from current queue")
-                    self.update_input()
+                    if ind > 0:
+                        track = self.queue[ind]
+                        del self.queue[ind]
+                        self.handle_play(track)
+                        self.layout_widget.update_log("Playing track from current queue")
+                        self.update_input()
                 except ValueError:
                     self.layout_widget.update_dashboard("Please enter the no. of track you want to play", "")
                     pass
@@ -193,6 +230,7 @@ class TextualApp(App):
                 self.show_playlists()
 
             if event.value.startswith("/ap"):
+                """Adds a track to a particular playlist mentioned!"""
                 try:
                     self.current_playlist, track_name = self.helper.parse_command(event.value)
                     self.tracks_list = await Search.fetch_tracks_list(track_name)
@@ -204,18 +242,21 @@ class TextualApp(App):
             
             if event.value.isdigit() and self.add_playlist:
                 try:
-                    track_name = self.tracks_list[event.value - 1]
-                    UserFiles.add_track_to_playlist(self.current_playlist, track_name)
-                    self.update_input()
+                    if int(event.value) > 0:
+                        track_name = self.tracks_list[event.value - 1]
+                        UserFiles.add_track_to_playlist(self.current_playlist, track_name)
+                        self.update_input()
                 except:
                     pass
             
             if event.value.startswith("/vp"):
+                """Shows contents of a particular playlist"""
                 playlist_name = self.helper.parse_command(event.value)
                 self.show_tracks_from_playlist(playlist_name)
                 self.update_input()
             
             if event.value == "/recents":
+                """Shows last 10 tracks played"""
                 try:
                     self.recents = UserFiles.fetch_recents()
                     self.layout_widget.update_dashboard(self.recents, "Recents :")
@@ -224,6 +265,7 @@ class TextualApp(App):
                     pass
 
             if event.value == "/sp" or event.value == "/show-playlists":
+                """Displays all playlists created or imported by user"""
                 self.show_playlists()
 
             if event.value.startswith("/ap"):
@@ -231,10 +273,6 @@ class TextualApp(App):
                 playlist_name, track_name = self.helper.parse_command(event.value)
                 self.add_to_playlist(track_name, playlist_name)
 
-            if event.value.startswith("/vp"):
-                """Lists tracks from a particular playlist"""
-                playlist_name = self.helper.parse_command(event.value)
-                self.show_tracks_from_playlist(playlist_name)
 
             if event.value.startswith("/sf"):
                 """Skips forward in the track"""
@@ -288,7 +326,37 @@ class TextualApp(App):
                     self.current_track = ""
                 except:
                     pass
-                
+            
+            
+            if event.value == "/ip":
+                """Prompts user to log in to their spotify for importing playlist"""
+                self.layout_widget.update_dashboard("Redirecting you to browser. Please log in to your spotify account to import the playlist of your choice!", "Redirect")
+                self.spotify_playlists = self.importer.fetch_playlists()
+                data = ""
+                if self.spotify_playlists:
+                    self.layout_widget.update_log("Playlists fetched!")
+                    for idx, playlist in enumerate(self.spotify_playlists):
+                        data = data + f"{idx+1}. {playlist['name']}" + "\n"
+                    data = data + "Type playlist no. to import"
+                    self.layout_widget.update_dashboard(data, "Fetched Playlists")
+                    self.import_playlist = True
+                self.update_input()
+                    
+            if event.value.isdigit() and self.import_playlist:
+                try:
+                    choice = int(event.value)
+                    if choice > 0:
+                        selected_playlist = self.spotify_playlists[choice-1]
+                        self.importer.save_playlist_to_json(selected_playlist['id'], selected_playlist['name'])
+                        self.layout_widget.update_dashboard(f"Playlist {selected_playlist['name']} saved successfully!", "Success")
+                        self.importer.refresh_playlist(selected_playlist['id'], selected_playlist['name'])
+                        self.update_input()
+                        self.import_playlist = not self.import_playlist
+                        self.update_input()
+                except:
+                    pass
+            
+            
             if event.value == "/help":
                 try:
                     self.layout_widget.show_commands()
@@ -341,7 +409,10 @@ class TextualApp(App):
     def show_playlists(self) -> None:
         try:
             playlists = UserFiles.fetch_playlists()
-            data = "\n".join(playlists) if playlists else ""
+            data = ""
+            if playlists:
+                for idx, playlist in enumerate(playlists):
+                    data = data + f"{idx+1}. {playlist}" + "\n"
             self.layout_widget.update_dashboard(data, "Your playlists")
         except:
             pass
