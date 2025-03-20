@@ -26,7 +26,7 @@ class TextualApp(App):
     tracks_list = reactive([])
     track_to_play = reactive("")
     helper = helper.Format()
-    queue = reactive({})
+    queue = reactive([])
     queue_options = reactive([])
     search_track = reactive("")
     current_track = reactive("")
@@ -74,7 +74,7 @@ class TextualApp(App):
         
         
         if event.value:
-            if event.value.startswith("/play"):
+            if event.value.startswith("/play") or event.value.startswith("/pl"):
                 try:
                     search_track = self.helper.parse_command(event.value)
                     self.layout_widget.update_log("Searching for tracks")
@@ -97,19 +97,36 @@ class TextualApp(App):
                     self.update_input()
                 except:
                     pass
-
-            if event.value.startswith("/volume"):
+                
+            if event.value.startswith("/alb"):
+                try:
+                    album_name = self.helper.parse_command(event.value)
+                    self.layout_widget.update_dashboard(f"Searching for Album: {album_name}", "Album")
+                    album = Search.get_album_id(album_name=album_name)
+                    album_tracks = Search.get_album_tracks(album)
+                    if album_tracks:
+                        self.layout_widget.update_log("Fetched Album!")
+                        track = album_tracks[0]
+                        self.handle_play(track)
+                        self.layout_widget.update_log("Playing from Album Search!")
+                        self.queue = []
+                        del album_tracks[0]
+                        self.queue = album_tracks     
+                except:
+                    pass
+                
+            if event.value.startswith("/volume") or event.value.startswith("/vl"):
                 try:
                     volume_to_be_set = self.helper.parse_command(event.value)
                     self.player.set_volume(volume_to_be_set)
                     self.volume = volume_to_be_set
                     self.update_input()
                     self.layout_widget.update_volume(volume_to_be_set)
-                except ValueError:
+                except:
                     self.layout_widget.update_dashboard("Please enter the volume in digits.", "")
                     pass
             
-            if event.value.startswith("/queue-add"):
+            if event.value.startswith("/queue-add") or event.value.startswith("/qa"):
                 try:
                     self.search_track = self.helper.parse_command(event.value)
                     self.queue_options = await Search.fetch_tracks_list(self.search_track)
@@ -117,7 +134,7 @@ class TextualApp(App):
                         self.layout_widget.update_dashboard(self.queue_options, "Type track no. to be added to queue :-")
                         self.update_input()
                         self.select_from_queue = True
-                except ValueError:
+                except:
                     self.layout_widget.update_dashboard("Please enter a valid track name. You can view the list of commands using /help", "")
                     pass
 
@@ -125,28 +142,28 @@ class TextualApp(App):
                 try:
                     self.should_play_queue = True
                     self.track_to_be_added_to_queue = self.queue_options[int(event.value)-1]
-                    self.queue[self.search_track] = helper.Format.clean_hashtag(self.track_to_be_added_to_queue)
+                    self.queue.append(helper.Format.clean_hashtag(self.track_to_be_added_to_queue))
                     self.update_input()
                     self.search_track=""
                 except:
                     pass
 
-            if event.value.startswith("/show-queue"):
+            if event.value.startswith("/show-queue") or event.value == "/sq":
                 try:
-                    tracks = self.queue.values()
+                    tracks = self.queue
                     data = "\n".join(f"{i+1}. {track}" for i, track in enumerate(tracks))
                     self.layout_widget.update_dashboard(data, "Current Queue :-")
                     self.update_input()
                 except:
                     pass
 
-            if event.value.startswith("/pause"):
+            if event.value.startswith("/pause") or event.value == "/ps":
                 """To prevent ui bugs"""
                 if str(self.player.get_state()) == "State.Playing":
                     self.action_pause()
                 self.update_input()
 
-            if event.value.startswith("/resume"):
+            if event.value.startswith("/resume") or event.value == "/r":
                 """To prevent ui bugs"""
                 if str(self.player.get_state()) == "State.Paused":
                     self.action_resume()
@@ -154,12 +171,9 @@ class TextualApp(App):
 
             if event.value.startswith("/qp"):
                 try:
-                    ind = int(helper.Format.parse_command(event.value))
-                    keys = list(self.queue.keys())
-                    key = keys[ind-1]
-                    queue = list(self.queue.values())
-                    track = queue[ind-1]
-                    del self.queue[key]
+                    ind = int(helper.Format.parse_command(event.value)) - 1
+                    track = self.queue[ind]
+                    del self.queue[ind]
                     self.handle_play(track)
                     self.layout_widget.update_log("Playing track from current queue")
                     self.update_input()
@@ -243,11 +257,34 @@ class TextualApp(App):
                         self.player.skip_backward()
                 except:
                     pass
+                
+            if event.value == "/next":
+                """Plays next track"""
+                try:
+                    if self.queue:
+                        self.handle_play(self.queue[0])
+                        del self.queue[0]
+                    else:
+                        self.layout_widget.update_log("Next track does not exist!")
+                except:
+                    pass
+                
+            if event.value == "/prev":
+                """Plays previous track"""
+                try:
+                    if self.queue:
+                        self.queue.insert(self.current_track)
+                    recents = UserFiles.fetch_recents()
+                    prev = recents[0]
+                    self.handle_play(prev)
+                    self.update_input()
+                except:
+                    pass
             
             if event.value == "/clq":
                 """Clears the queue"""
                 try:
-                    self.queue = {}
+                    self.queue = []
                     self.current_track = ""
                 except:
                     pass
@@ -347,20 +384,17 @@ class TextualApp(App):
         
         try:   
             self.layout_widget.update_music_progress(TrackInfo.get_current_time(self.player), int(TrackInfo.get_progress(self.player)))
-
+            
         except:
             pass
 
         if str(self.player.get_state()) == "State.Ended":
             if self.queue:
                 try:
-                    keys = list(self.queue.keys())
-                    tracks = list(self.queue.values())
-                    key = keys[0]
-                    track = tracks[0]
-                    del self.queue[key]
+                    track = self.queue[0]
+                    self.queue.pop(0)
                     self.handle_play(track)
-                    entries = self.queue.values()
+                    entries = self.queue
                     data = "\n".join(f"{i+1}. {track}" for i, track in enumerate(entries))
                     self.layout_widget.update_dashboard(data, "Current Queue :-")
                     self.layout_widget.update_log("Currently playing from queue")
@@ -369,15 +403,17 @@ class TextualApp(App):
             
         if str(self.player.get_state()) == "State.Playing" and not self.queue:
             try:
-                self.layout_widget.update_log("Adding new songs to queue")
-                track_suggestions = await Search.get_similar_tracks(self.current_track)
+                self.layout_widget.update_log("Adding new songs to queue") if self.current_track else self.layout_widget.update_log("Queue deleted, play a new song to add new queue!")
+                if self.current_track:
+                    self.layout_widget.update_log(self.current_track)
+                track_suggestions = Search.get_similar_tracks(self.current_track)
+                if track_suggestions:
+                    self.layout_widget.update_log("Suggestions fetched!")
                 for track in track_suggestions:
-                    entry = f"{track['name']} by {track['artist']}"
-                    name = track['name']
                     song, artist = helper.Format.extract_song_and_artist(self.current_track)
                     """Prevents duplicate entries since artist top tracks might have the same song thats playing"""
-                    if name != song:
-                        self.queue[name] = entry
-
-            except Exception as e:
-                print(f"Error fetching similar tracks: {e}")
+                    if not song in track:
+                        self.queue.append(track) 
+                self.layout_widget.update_log("Queue updated") if self.queue else self.layout_widget.update_log("")
+            except:
+                pass

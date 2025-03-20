@@ -46,9 +46,9 @@ class Format:
         
         command_type, value = parts
     
-        if command_type == '/play' or command_type == '/queue-add' or command_type == '/queue-remove' or command_type == "/vp":
+        if command_type == '/play' or command_type == '/pl' or command_type == '/queue-add' or command_type == '/queue-remove' or command_type == "/vp" or command_type == "/qa" or command_type == "/alb":
             return value
-        elif command_type == '/volume' or command_type == '/qp' or command_type == "/sf" or command_type == "/sb":
+        elif command_type == '/volume' or command_type == "/vl" or command_type == '/qp' or command_type == "/sf" or command_type == "/sb":
             try:
                 return int(value)
             except ValueError:

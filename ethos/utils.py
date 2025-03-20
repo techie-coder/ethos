@@ -1,18 +1,21 @@
 from yt_dlp import YoutubeDL
 import os
 import base64
-from dotenv import load_dotenv, find_dotenv
+from dotenv import load_dotenv
 from time import time
 import httpx
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
 from pathlib import Path
 from ethos.tools.helper import Format
 import json
+import random
+import re
 load_dotenv()
 
 class Search:
     """Utility class for searching track metadata and url from external APIs"""
-
-
+    
     @staticmethod
     def get_audio_url(query):
         """
@@ -100,16 +103,16 @@ class Search:
         
         return response_data["tracks"]["items"]
 
-
+    
     @staticmethod
     async def fetch_tracks_list(track_name: str) -> list:
-        """
+        '''
         Returns a list of track name and artist name from tracks info
 
         Args: track_name(str)
 
         return: list
-        """
+        '''
 
         fetched_tracks = []
         try:
@@ -133,6 +136,7 @@ class Search:
             end_time = time()
             print("Time taken to get metadata = %.2f" % (end_time - start_time))
             return fetched_tracks
+    
         
 
     @staticmethod
@@ -152,23 +156,73 @@ class Search:
         else:
             raise Exception(f"Failed to search artist: {response.json()}")
 
+
+    @staticmethod    
+    def get_artist_albums(artist_name):
+        """Fetch all albums of a given artist."""
         
+        CLIENT_ID = "e904c35efb014b76bd8999a211e9b1e1"
+        CLIENT_SECRET = "af18ccf7adae4ea7b37ca635c4225928"
+    
+        sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET))
+        result = sp.search(q=artist_name, type="artist", limit=1)
+        
+        if not result['artists']['items']:
+            return f"Artist '{artist_name}' not found!"
+        
+        artist_id = result['artists']['items'][0]['id']
+        albums = sp.artist_albums(artist_id, album_type='album', limit=50)
+
+        album_list = {album['name']: album['id'] for album in albums['items']}
+        
+        return album_list
+    
     @staticmethod
-    async def search_song_id_from_spotify(song_name, token):
-        """Search for a song on Spotify."""
-        url = f"https://api.spotify.com/v1/search?q={song_name}&type=track&limit=1"
-        headers = {"Authorization": f"Bearer {token}"}
+    def get_album_tracks(album_id):
+        """Fetch all tracks from a given album."""
         
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers=headers)
-            if response.status_code == 200:
-                data = response.json()
-                if data["tracks"]["items"]:
-                    return data["tracks"]["items"][0]["id"]
-                else:
-                    raise Exception("No song found!")
-            else:
-                raise Exception(f"Failed to search song: {response.json()}")
+        CLIENT_ID = "e904c35efb014b76bd8999a211e9b1e1"
+        CLIENT_SECRET = "af18ccf7adae4ea7b37ca635c4225928"
+    
+        sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET))
+        
+        tracks = sp.album_tracks(album_id)
+    
+        track_list = []
+        for track in tracks['items']:
+            track_name = track['name']
+            track_artists = ", ".join(artist['name'] for artist in track['artists'])
+            track_list.append(f"{track_name} by {track_artists}")
+        
+        return track_list
+    
+    @staticmethod
+    def get_album_id(album_name):
+        """Gets album id from album name"""
+        CLIENT_ID = "e904c35efb014b76bd8999a211e9b1e1"
+        CLIENT_SECRET = "af18ccf7adae4ea7b37ca635c4225928"
+        sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET))
+        results = sp.search(q=album_name, type='album', limit=1)
+        if results['albums']['items']:
+            album = results['albums']['items'][0]
+            return album['id']
+        return None
+    
+    
+    @staticmethod
+    def get_similar_tracks(track_name: str) -> list[str] :
+        '''Adds songs based on current artist to queue if the queue is empty'''
+        song, artist = Format.extract_song_and_artist(track_name)
+        pattern = r'([^,]+)'
+        artists = re.findall(pattern, artist)
+        artist_name = artists[random.randint(0,len(artists)-1)]
+        albums = Search.get_artist_albums(artist_name=artist_name)
+        if albums:
+            num = len(albums)
+            album_id = list(albums.values())[random.randint(0,num-1)]
+            tracks = Search.get_album_tracks(album_id)
+            return tracks
+        return
 
 
     @staticmethod
@@ -215,17 +269,9 @@ class Search:
             else:
                 raise Exception(f"Failed to get track data: {response_data}")
     
-            
-    @staticmethod
-    async def get_similar_tracks(track_name: str) -> list[str] :
-        """Adds songs based on current artist to queue if the queue is empty"""
-        song, artist = Format.extract_song_and_artist(track_name)
-        token = await Search.get_spotify_token()
-        artist_id = await Search.search_artist_id_from_spotify(artist_name=artist, token=token)
-        top_tracks = await Search.fetch_top_tracks(artist_id=artist_id, token=token)
-        return top_tracks
+     
     
-
+        
 class UserFiles:
     """Utility class for performing operations related to userfiles like recents and playlists"""
 
