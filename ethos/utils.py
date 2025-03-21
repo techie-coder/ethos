@@ -49,7 +49,7 @@ class Search:
 
 
     @staticmethod
-    async def get_spotify_token(client_id="e904c35efb014b76bd8999a211e9b1e1", client_secret="af18ccf7adae4ea7b37ca635c4225928"):
+    async def get_spotify_token(client_id=os.getenv("SPOTIFY_CLIENT_ID"), client_secret=os.getenv("SPOTIFY_CLIENT_SECRET")):
         """
         Fetches authorization token from spotify
         
@@ -161,8 +161,8 @@ class Search:
     def get_artist_albums(artist_name):
         """Fetch all albums of a given artist."""
         
-        CLIENT_ID = "e904c35efb014b76bd8999a211e9b1e1"
-        CLIENT_SECRET = "af18ccf7adae4ea7b37ca635c4225928"
+        CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
+        CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
     
         sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET))
         result = sp.search(q=artist_name, type="artist", limit=1)
@@ -181,8 +181,8 @@ class Search:
     def get_album_tracks(album_id):
         """Fetch all tracks from a given album."""
         
-        CLIENT_ID = "e904c35efb014b76bd8999a211e9b1e1"
-        CLIENT_SECRET = "af18ccf7adae4ea7b37ca635c4225928"
+        CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
+        CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
     
         sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET))
         
@@ -199,8 +199,8 @@ class Search:
     @staticmethod
     def get_album_id(album_name):
         """Gets album id from album name"""
-        CLIENT_ID = "e904c35efb014b76bd8999a211e9b1e1"
-        CLIENT_SECRET = "af18ccf7adae4ea7b37ca635c4225928"
+        CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
+        CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
         sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET))
         results = sp.search(q=album_name, type='album', limit=1)
         if results['albums']['items']:

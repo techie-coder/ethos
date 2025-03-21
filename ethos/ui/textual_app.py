@@ -518,10 +518,13 @@ class TextualApp(App):
                     self.queue.pop(0)
                     self.handle_play(track)
                     entries = self.queue
-                    self.dashboard_data = entries
+                    data = []
+                    for idx, entry in enumerate(entries):
+                        data.append(f"{idx+1}. {entry}")
+                    self.dashboard_data = data
                     self.dashboard_title = "Current Queue:-"
                     self.start_idx = 0
-                    self.layout_widget.update_dashboard(entries, "Current Queue :-")
+                    self.layout_widget.update_dashboard(data, "Current Queue :-")
                     self.layout_widget.update_log("Currently playing from queue")
                 except:
                     pass
