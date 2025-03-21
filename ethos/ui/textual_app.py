@@ -8,6 +8,8 @@ from ethos.tools import helper
 from ethos.utils import Search, UserFiles
 from ethos.spotify_importer import SpotifyImporter
 import random
+from functools import lru_cache
+import time
 
 
 class TextualApp(App):
@@ -28,31 +30,36 @@ class TextualApp(App):
     helper = helper.Format()
     importer = SpotifyImporter()
     
-    volume = reactive(50)
+    volume = 50
     rows_per_page = 10
     start_idx = 0
-    should_play_queue = reactive(False)
-    should_play_playlist = reactive(False)
-    show_playlists = reactive(False)
-    add_playlist = reactive(False)
-    import_playlist = reactive(False)
+    should_play_queue = False
+    should_play_playlist = False
+    show_playlists = False
+    add_playlist = False
+    import_playlist = False
     
-    tracks_list = reactive([])
-    recents = reactive([])
-    queue = reactive([])
-    spotify_playlists = reactive({})
-    queue_options = reactive([])
-    track_to_play = reactive("")
-    search_track = reactive("")
-    current_track = reactive("")
-    select_from_queue = reactive("")
-    track_url = reactive("")
-    current_track_duration = reactive("")
+    tracks_list = []
+    recents = []
+    queue = []
+    spotify_playlists = {}
+    queue_options = []
+    track_to_play = ""
+    search_track = ""
+    current_track = ""
+    select_from_queue = ""
+    track_url = ""
+    current_track_duration = ""
     layout_widget = ""
-    current_playlist = reactive("")
-    dashboard_data = reactive("")
-    dashboard_title = reactive("")
+    current_playlist = ""
+    dashboard_data = ""
+    dashboard_title = ""
     
+    def __init__(self):
+        super().__init__()
+        # Add throttle settings
+        self.last_update = 0 
+        self.min_update_interval = 0.1  # 100ms minimum between updates
 
     def compose(self) -> ComposeResult:
         """Composer function for textual app"""
@@ -74,7 +81,7 @@ class TextualApp(App):
                 self.layout_widget.update_dashboard(self.recents, "Recents :-")
             else:
                 self.layout_widget.update_dashboard("You have not played any tracks yet!", "")
-            self.set_interval(1, self.update_)
+            self.set_interval(0.25, self.update_)
         except:
             pass
 
@@ -421,6 +428,9 @@ class TextualApp(App):
         """Pause the player"""
         self.player.pause()
         self.layout_widget.update_playing_status()
+        # Clear cached data
+        self._last_time = None
+        self._last_progress = None
 
 
     def action_resume(self):
@@ -446,7 +456,7 @@ class TextualApp(App):
         """Function to handle the track playback"""
         try:
             self.current_track = track_name
-            url = Search.get_audio_url(track_name+" official music video")
+            url = self.get_audio_url(track_name)
             self.track_url = url
             self.player.play(url)
             self.player.set_volume(self.volume)
@@ -459,12 +469,18 @@ class TextualApp(App):
         except:
             pass
     
+    @lru_cache(maxsize=128)
+    def get_audio_url(self, track_name: str) -> str:
+        """Cache audio URLs to avoid repeated lookups"""
+        return Search.get_audio_url(track_name + " official music video")
+
     def show_playlists(self) -> None:
         try:
             playlists = UserFiles.fetch_playlists()
-            data = []
-            for idx, playlist in enumerate(playlists):
-                data.append(f"{idx+1}. {playlist}")
+            # Prepare data in one go
+            data = [f"{idx+1}. {playlist}" for idx, playlist in enumerate(playlists)]
+            
+            # Single update call with all data
             self.dashboard_data = data
             self.dashboard_title = "Playlists"
             self.start_idx = 0
@@ -474,18 +490,21 @@ class TextualApp(App):
 
     def show_tracks_from_playlist(self, playlist: str) -> None:
         try:
-            playlist = UserFiles.fetch_tracks_from_playlist(playlist)
-            data = []
-            for idx, track in enumerate(playlist):
-                data.append(f"{idx+1}. {track}")
+            playlist_tracks = UserFiles.fetch_tracks_from_playlist(playlist)
+            
+            # Paginate results
+            page_size = 20
+            start = self.start_idx 
+            end = start + page_size
+            
+            current_page = playlist_tracks[start:end]
+            data = [f"{idx+1}. {track}" for idx, track in enumerate(current_page, start=start)]
+            
             self.dashboard_data = data
-            self.dashboard_title = "Playlist Contents"
-            self.start_idx = 0
-            self.layout_widget.update_dashboard(data, "Playlist Contents :")
+            self.dashboard_title = f"Playlist Contents (Page {start//page_size + 1})"
+            self.layout_widget.update_dashboard(data, self.dashboard_title)
         except:
             pass
-
-
 
     def add_to_playlist(self, track, playlist: str) -> None:
         try:
@@ -505,9 +524,25 @@ class TextualApp(App):
     async def update_(self) -> None:
         """Function to update track progress and check for queue"""
         
-        try:   
-            self.layout_widget.update_music_progress(TrackInfo.get_current_time(self.player), int(TrackInfo.get_progress(self.player)))
+        current_time = time.time()
+        if current_time - self.last_update < self.min_update_interval:
+            return
             
+        self.last_update = current_time
+
+        try:
+            # Cache progress calculations to avoid recalculating every update
+            if self.current_track:
+                current_time = TrackInfo.get_current_time(self.player)
+                progress = int(TrackInfo.get_progress(self.player)) 
+                
+                # Only update if values changed
+                if (current_time != getattr(self, '_last_time', None) or
+                    progress != getattr(self, '_last_progress', None)):
+                    self.layout_widget.update_music_progress(current_time, progress)
+                    self._last_time = current_time
+                    self._last_progress = progress
+                    
         except:
             pass
 
@@ -518,10 +553,13 @@ class TextualApp(App):
                     self.queue.pop(0)
                     self.handle_play(track)
                     entries = self.queue
-                    self.dashboard_data = entries
+                    data = []
+                    for idx, entry in enumerate(entries):
+                        data.append(f"{idx+1}. {entry}")
+                    self.dashboard_data = data
                     self.dashboard_title = "Current Queue:-"
                     self.start_idx = 0
-                    self.layout_widget.update_dashboard(entries, "Current Queue :-")
+                    self.layout_widget.update_dashboard(data, "Current Queue :-")
                     self.layout_widget.update_log("Currently playing from queue")
                 except:
                     pass
